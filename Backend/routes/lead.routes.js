@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createLead,
+  getLeadById,
   getLeads,
   updateLead,
   deleteLead,
@@ -20,6 +21,7 @@ router.route("/")
   .get(getLeads);
 
 router.route("/:id")
+  .get(getLeadById)
   .patch(updateLead)
   .delete(deleteLead);
 
