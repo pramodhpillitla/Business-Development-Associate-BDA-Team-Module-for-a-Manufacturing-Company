@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 
 import activityRoutes from "../routes/activity.routes.js";
+import authRoutes from "../routes/auth.routes.js";
 import dashboardRoutes from "../routes/dashboard.routes.js";
 import leadRoutes from "../routes/lead.routes.js";
 import { errorHandler } from "../middlewares/error.middleware.js";
@@ -24,6 +25,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api", activityRoutes);
 app.use("/api/dashboard", dashboardRoutes);

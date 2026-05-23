@@ -14,7 +14,14 @@ export const verifyJWT = asyncHandler(async (req, _res, next) => {
     throw new ApiError(401, "Authentication token is required");
   }
 
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+  if (!process.env.ACCESS_TOKEN_SECRET) {
+    throw new ApiError(
+      500,
+      "ACCESS_TOKEN_SECRET is missing from environment variables"
+    );
+  }
+
+  const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
   const user = await User.findById(decodedToken._id).select("-password");
 
   if (!user) {
@@ -24,3 +31,13 @@ export const verifyJWT = asyncHandler(async (req, _res, next) => {
   req.user = user;
   next();
 });
+
+export const authorizeRoles = (...roles) => {
+  return (req, _res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      throw new ApiError(403, "You are not allowed to perform this action");
+    }
+
+    next();
+  };
+};

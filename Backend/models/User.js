@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema(
       enum: ["admin", "bda"],
       default: "bda",
     },
+
+    refreshToken: {
+      type: String,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
