@@ -2,9 +2,20 @@ import { useEffect, useState } from "react";
 
 import EmptyState from "../components/common/EmptyState";
 import Loader from "../components/common/Loader";
+import RecentLeads from "../components/dashboard/RecentLeads";
 import StatsCard from "../components/dashboard/StatsCard";
+import StatusBreakdown from "../components/dashboard/StatusBreakdown";
+import TeamTable from "../components/dashboard/TeamTable";
 import PageWrapper from "../components/layout/PageWrapper";
 import API from "../services/api";
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+    style: "currency",
+    currency: "INR",
+  }).format(value || 0);
+};
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -12,21 +23,35 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let shouldIgnore = false;
+
     const fetchSummary = async () => {
       try {
         const response = await API.get("/dashboard/summary");
-        setData(response.data.data);
+
+        if (!shouldIgnore) {
+          setData(response.data.data);
+          setError("");
+        }
       } catch (summaryError) {
-        setError(
-          summaryError.response?.data?.message ||
-            "Unable to load dashboard summary."
-        );
+        if (!shouldIgnore) {
+          setError(
+            summaryError.response?.data?.message ||
+              "Unable to load dashboard summary."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!shouldIgnore) {
+          setLoading(false);
+        }
       }
     };
 
     fetchSummary();
+
+    return () => {
+      shouldIgnore = true;
+    };
   }, []);
 
   return (
@@ -45,11 +70,51 @@ const Dashboard = () => {
       ) : null}
 
       {!loading && data ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatsCard title="Total Leads" value={data.totalLeads ?? 0} />
-          <StatsCard title="Revenue" value={`Rs. ${data.revenue ?? 0}`} />
-          <StatsCard title="Won Deals" value={data.wonDeals ?? 0} />
-          <StatsCard title="Conversion %" value={data.conversionRate ?? 0} />
+        <div className="grid gap-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatsCard
+              helper={`${data.activeLeads ?? 0} active opportunities`}
+              title="Total Leads"
+              value={data.totalLeads ?? 0}
+            />
+            <StatsCard
+              helper="Closed won deal value"
+              title="Revenue"
+              value={formatCurrency(data.revenue)}
+            />
+            <StatsCard
+              helper="Open deal value"
+              title="Pipeline Value"
+              value={formatCurrency(data.pipelineValue)}
+            />
+            <StatsCard
+              helper="Average across all leads"
+              title="Average Deal"
+              value={formatCurrency(data.averageDealValue)}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatsCard
+              helper={`${data.wonDeals ?? 0} won deals`}
+              title="Conversion Rate"
+              value={`${data.conversionRate ?? 0}%`}
+            />
+            <StatsCard
+              helper={`${data.lostDeals ?? 0} lost deals`}
+              title="Loss Rate"
+              value={`${data.lossRate ?? 0}%`}
+            />
+            <StatsCard title="Won Deals" value={data.wonDeals ?? 0} />
+            <StatsCard title="Lost Deals" value={data.lostDeals ?? 0} />
+          </div>
+
+          <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+            <StatusBreakdown items={data.pipelineByStatus || []} />
+            <RecentLeads leads={data.recentLeads || []} />
+          </div>
+
+          <TeamTable members={data.teamStats || []} />
         </div>
       ) : null}
     </PageWrapper>
