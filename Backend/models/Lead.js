@@ -1,60 +1,55 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const leadSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  company: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  contactInfo: {
-    email: {
+const leadSchema = new mongoose.Schema(
+  {
+    name: {
       type: String,
-      lowercase: true,
+      required: [true, "Lead name is required"],
       trim: true,
     },
-    phone: {
+    company: {
       type: String,
+      required: [true, "Company name is required"],
       trim: true,
     },
-    address: {
+    contactInfo: {
       type: String,
+      required: [true, "Contact info is required"],
       trim: true,
     },
-  },
-  status: {
-    type: String,
-    enum: ["new", "contacted", "qualified", "proposal", "negotiation", "won", "lost"],
-    default: "new",
-    required: true,
-  },
-  dealValue: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  assignedTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  closedAt: {
-    type: Date,
-    default: null,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
 
-module.exports = mongoose.model("Lead", leadSchema);
+    status: {
+      type: String,
+      enum: ["New", "Contacted", "Qualified", "Won", "Lost"],
+      default: "New",
+    },
+
+    dealValue: {
+      type: Number,
+      default: 0,
+      min: [0, "Deal value cannot be negative"],
+    },
+
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    closedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+export const Lead = mongoose.model("Lead", leadSchema);
