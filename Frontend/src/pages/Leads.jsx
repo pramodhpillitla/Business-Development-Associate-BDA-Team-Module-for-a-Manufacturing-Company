@@ -275,7 +275,7 @@ const Leads = () => {
 
       {!loading ? (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="grid gap-4 overflow-x-auto pb-4 xl:grid-cols-7">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
             {leadsByStatus.map((column) => (
               <KanbanColumn
                 key={column.status}

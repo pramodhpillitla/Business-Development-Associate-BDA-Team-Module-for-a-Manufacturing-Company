@@ -11,7 +11,7 @@ const KanbanColumn = ({ leads, onCardClick, status }) => {
   return (
     <section
       ref={setNodeRef}
-      className={`min-h-80 rounded-lg border p-3 transition ${
+      className={`min-h-80 w-72 shrink-0 snap-start rounded-lg border p-3 transition ${
         isOver
           ? "border-emerald-300 bg-emerald-300/10"
           : "border-white/10 bg-white/5"
