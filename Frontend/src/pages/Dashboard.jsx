@@ -27,7 +27,7 @@ const Dashboard = () => {
 
     const fetchSummary = async () => {
       try {
-        const response = await API.get("/dashboard/summary");
+        const response = await API.get("/metrics");
 
         if (!shouldIgnore) {
           setData(response.data.data);
