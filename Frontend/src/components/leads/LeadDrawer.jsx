@@ -171,24 +171,39 @@ const LeadDrawer = ({ lead, onClose }) => {
           {error ? <p className="text-sm text-red-200">{error}</p> : null}
 
           <div className="grid gap-3">
-            {activities.map((activity) => (
-              <article
-                className="rounded-lg border border-white/10 bg-white/5 p-4"
-                key={activity._id}
-              >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-zinc-800 px-2 py-1 text-xs uppercase text-zinc-300">
-                    {activity.type}
-                  </span>
-                  <time className="text-xs text-zinc-500">
-                    {formatDate(activity.createdAt)}
-                  </time>
-                </div>
-                <p className="text-sm leading-6 text-zinc-200">
-                  {activity.message}
-                </p>
-              </article>
-            ))}
+            {activities.map((activity) => {
+              const isSystem = activity.type === "system";
+
+              return (
+                <article
+                  className={`rounded-lg border p-4 ${
+                    isSystem ? "border-zinc-800 bg-transparent" : "border-white/10 bg-white/5"
+                  }`}
+                  key={activity._id}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                        isSystem ? "bg-zinc-900 text-zinc-500 border border-zinc-800" : "bg-zinc-800 text-zinc-300"
+                      }`}>
+                        {activity.type}
+                      </span>
+                      {activity.createdBy && (
+                        <span className="text-xs text-zinc-500">
+                          by <strong className="text-zinc-400">{activity.createdBy.name}</strong>
+                        </span>
+                      )}
+                    </div>
+                    <time className="text-xs text-zinc-500">
+                      {formatDate(activity.createdAt)}
+                    </time>
+                  </div>
+                  <p className={`text-sm leading-6 ${isSystem ? "text-zinc-400 italic" : "text-zinc-200"}`}>
+                    {activity.message}
+                  </p>
+                </article>
+              );
+            })}
 
             {!loading && !activities.length ? (
               <p className="rounded-lg border border-dashed border-white/10 p-4 text-sm text-zinc-500">

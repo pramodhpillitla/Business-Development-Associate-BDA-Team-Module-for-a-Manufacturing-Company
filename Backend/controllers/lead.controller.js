@@ -110,6 +110,13 @@ export const createLead = asyncHandler(async (req, res) => {
 
   const populatedLead = await populateLead(Lead.findById(lead._id));
 
+  await Activity.create({
+    leadId: lead._id,
+    message: `Lead created and assigned to ${populatedLead.assignedTo?.name || "User"}`,
+    type: "system",
+    createdBy: req.user._id,
+  });
+
   getIO().emit("lead:created", populatedLead);
 
   return res
@@ -234,6 +241,8 @@ export const updateLead = asyncHandler(async (req, res) => {
 
   ensureLeadOwnership(lead, req.user);
 
+  const oldStatus = lead.status;
+
   for (const field of LEAD_UPDATE_FIELDS) {
     if (req.body[field] !== undefined) {
       lead[field] = req.body[field];
@@ -250,6 +259,15 @@ export const updateLead = asyncHandler(async (req, res) => {
 
   applyClosedAtRule(lead);
   await lead.save();
+
+  if (oldStatus !== lead.status) {
+    await Activity.create({
+      leadId: lead._id,
+      message: `Lead moved from ${oldStatus} → ${lead.status}`,
+      type: "system",
+      createdBy: req.user._id,
+    });
+  }
 
   const updatedLead = await populateLead(Lead.findById(lead._id));
 
@@ -296,9 +314,20 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
 
   ensureLeadOwnership(lead, req.user);
 
+  const oldStatus = lead.status;
+
   lead.status = status;
   applyClosedAtRule(lead);
   await lead.save();
+
+  if (oldStatus !== status) {
+    await Activity.create({
+      leadId: lead._id,
+      message: `Lead moved from ${oldStatus} → ${status}`,
+      type: "system",
+      createdBy: req.user._id,
+    });
+  }
 
   const updatedLead = await populateLead(Lead.findById(lead._id));
 

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const ACTIVITY_TYPES = ["call", "email", "meeting", "note"];
+export const ACTIVITY_TYPES = ["call", "email", "meeting", "note", "system"];
 
 const activitySchema = new mongoose.Schema(
   {
