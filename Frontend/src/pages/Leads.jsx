@@ -202,7 +202,12 @@ const Leads = () => {
       assignedTo: user._id,
     });
 
-    setLeads((currentLeads) => [response.data.data, ...currentLeads]);
+    setLeads((currentLeads) => {
+      if (currentLeads.some((l) => l._id === response.data.data._id)) {
+        return currentLeads;
+      }
+      return [response.data.data, ...currentLeads];
+    });
     setShowCreateModal(false);
   };
 
