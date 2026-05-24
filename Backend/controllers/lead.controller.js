@@ -6,6 +6,7 @@ import { User } from "../models/User.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { getIO } from "../lib/socket.js";
 
 const CLOSED_STATUSES = ["Won", "Lost"];
 const LEAD_UPDATE_FIELDS = [
@@ -99,6 +100,8 @@ export const createLead = asyncHandler(async (req, res) => {
   });
 
   const populatedLead = await populateLead(Lead.findById(lead._id));
+
+  getIO().emit("lead:created", populatedLead);
 
   return res
     .status(201)
@@ -239,6 +242,8 @@ export const updateLead = asyncHandler(async (req, res) => {
 
   const updatedLead = await populateLead(Lead.findById(lead._id));
 
+  getIO().emit("lead:updated", updatedLead);
+
   return res
     .status(200)
     .json(new ApiResponse(200, updatedLead, "Lead updated successfully"));
@@ -253,6 +258,8 @@ export const deleteLead = asyncHandler(async (req, res) => {
   if (!lead) throw new ApiError(404, "Lead not found");
 
   await Activity.deleteMany({ leadId: id });
+
+  getIO().emit("lead:deleted", id);
 
   return res
     .status(200)
@@ -277,6 +284,8 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
   await lead.save();
 
   const updatedLead = await populateLead(Lead.findById(lead._id));
+
+  getIO().emit("lead:updated", updatedLead);
 
   return res
     .status(200)

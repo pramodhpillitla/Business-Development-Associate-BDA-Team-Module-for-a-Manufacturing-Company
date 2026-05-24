@@ -66,6 +66,8 @@ const sanitizeUser = (user) => ({
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, role = "bda" } = req.body;
 
+  console.log(name);
+
   if (!name || !email || !password) {
     throw new ApiError(400, "Name, email, and password are required");
   }

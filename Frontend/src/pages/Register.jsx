@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../context/useAuth";
 
-const Login = () => {
+const Register = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const { register } = useAuth();
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,12 +21,12 @@ const Login = () => {
     setSubmitting(true);
 
     try {
-      await login(form);
+      await register(form);
       navigate("/dashboard", { replace: true });
-    } catch (loginError) {
+    } catch (registerError) {
       setError(
-        loginError.response?.data?.message ||
-          "Unable to login. Please check your credentials."
+        registerError.response?.data?.message ||
+          "Unable to register. Please check your details."
       );
     } finally {
       setSubmitting(false);
@@ -65,6 +65,20 @@ const Login = () => {
 
         <form className="grid content-center gap-5" onSubmit={handleSubmit}>
           <label className="grid gap-2 text-sm text-zinc-300">
+            Name
+            <input
+              autoComplete="name"
+              className="h-12 rounded-lg border border-white/10 bg-white/5 px-4 text-white outline-none focus:border-emerald-300"
+              name="name"
+              onChange={handleChange}
+              placeholder="John Doe"
+              required
+              type="text"
+              value={form.name}
+            />
+          </label>
+
+          <label className="grid gap-2 text-sm text-zinc-300">
             Email
             <input
               autoComplete="email"
@@ -81,11 +95,11 @@ const Login = () => {
           <label className="grid gap-2 text-sm text-zinc-300">
             Password
             <input
-              autoComplete="current-password"
+              autoComplete="new-password"
               className="h-12 rounded-lg border border-white/10 bg-white/5 px-4 text-white outline-none focus:border-emerald-300"
               name="password"
               onChange={handleChange}
-              placeholder="Enter your password"
+              placeholder="Create a password"
               required
               type="password"
               value={form.password}
@@ -103,17 +117,17 @@ const Login = () => {
             disabled={submitting}
             type="submit"
           >
-            {submitting ? "Signing in..." : "Sign in"}
+            {submitting ? "Registering..." : "Register"}
           </button>
           
           <p className="text-center text-sm text-zinc-400">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <button
               type="button"
               className="text-emerald-300 hover:underline"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
             >
-              Register here
+              Sign in here
             </button>
           </p>
         </form>
@@ -122,4 +136,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

@@ -50,6 +50,18 @@ export const AuthProvider = ({ children }) => {
     return loggedInUser;
   };
 
+  const register = async ({ name, email, password }) => {
+    const response = await API.post("/auth/register", { name, email, password });
+    const { accessToken, refreshToken, user: registeredUser } = response.data.data;
+
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem("user", JSON.stringify(registeredUser));
+    setUser(registeredUser);
+
+    return registeredUser;
+  };
+
   const logout = async () => {
     try {
       await API.post("/auth/logout");
@@ -69,6 +81,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       isAuthenticated,
       login,
+      register,
       logout,
     }),
     [user, loading, isAuthenticated]

@@ -7,6 +7,7 @@ import KanbanColumn from "../components/leads/KanbanColumn";
 import LeadDrawer from "../components/leads/LeadDrawer";
 import PageWrapper from "../components/layout/PageWrapper";
 import { useAuth } from "../context/useAuth";
+import { useSocket } from "../context/useSocket";
 import API from "../services/api";
 
 const statusLabels = [
@@ -21,6 +22,7 @@ const statusLabels = [
 
 const Leads = () => {
   const { user } = useAuth();
+  const socket = useSocket();
   const [leads, setLeads] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
   const [dragTarget, setDragTarget] = useState("");
@@ -63,6 +65,44 @@ const Leads = () => {
       shouldIgnore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLeadCreated = (newLead) => {
+      setLeads((currentLeads) => {
+        if (currentLeads.some((l) => l._id === newLead._id)) return currentLeads;
+        return [newLead, ...currentLeads];
+      });
+    };
+
+    const handleLeadUpdated = (updatedLead) => {
+      setLeads((currentLeads) =>
+        currentLeads.map((lead) =>
+          lead._id === updatedLead._id ? updatedLead : lead
+        )
+      );
+
+      setSelectedLead((currentLead) =>
+        currentLead?._id === updatedLead._id ? updatedLead : currentLead
+      );
+    };
+
+    const handleLeadDeleted = (deletedId) => {
+      setLeads((currentLeads) => currentLeads.filter((l) => l._id !== deletedId));
+      setSelectedLead((current) => (current?._id === deletedId ? null : current));
+    };
+
+    socket.on("lead:created", handleLeadCreated);
+    socket.on("lead:updated", handleLeadUpdated);
+    socket.on("lead:deleted", handleLeadDeleted);
+
+    return () => {
+      socket.off("lead:created", handleLeadCreated);
+      socket.off("lead:updated", handleLeadUpdated);
+      socket.off("lead:deleted", handleLeadDeleted);
+    };
+  }, [socket]);
 
   const filteredLeads = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
