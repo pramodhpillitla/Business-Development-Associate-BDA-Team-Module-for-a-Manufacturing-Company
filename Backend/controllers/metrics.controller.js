@@ -22,6 +22,7 @@ export const getDashboardSummary = asyncHandler(async (_req, res) => {
     statusStats,
     teamStats,
     recentLeads,
+    revenueOverTimeRaw,
   ] = await Promise.all([
     Lead.countDocuments(),
     Lead.countDocuments({ status: "Won" }),
@@ -118,6 +119,17 @@ export const getDashboardSummary = asyncHandler(async (_req, res) => {
       .sort({ createdAt: -1 })
       .limit(5)
       .select("name company status dealValue assignedTo createdAt"),
+    Lead.aggregate([
+      { $match: { status: "Won" } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: { $ifNull: ["$closedAt", "$updatedAt"] } } },
+          revenue: { $sum: "$dealValue" },
+        },
+      },
+      { $sort: { _id: 1 } },
+      { $limit: 12 },
+    ]),
   ]);
 
   const revenue = revenueResult[0]?.totalRevenue || 0;
@@ -157,6 +169,10 @@ export const getDashboardSummary = asyncHandler(async (_req, res) => {
         conversionRate,
         lossRate,
         pipelineByStatus,
+        revenueOverTime: revenueOverTimeRaw.map((item) => ({
+          month: item._id,
+          revenue: item.revenue,
+        })),
         teamStats: teamStats.map((member) => ({
           ...member,
           conversionRate: roundToTwo(member.conversionRate),

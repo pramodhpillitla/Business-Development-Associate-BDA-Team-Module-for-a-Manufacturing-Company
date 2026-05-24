@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import EmptyState from "../components/common/EmptyState";
 import Loader from "../components/common/Loader";
+import AnalyticsCharts from "../components/dashboard/AnalyticsCharts";
+import InsightsPanel from "../components/dashboard/InsightsPanel";
 import RecentLeads from "../components/dashboard/RecentLeads";
 import StatsCard from "../components/dashboard/StatsCard";
 import StatusBreakdown from "../components/dashboard/StatusBreakdown";
@@ -71,7 +73,9 @@ const Dashboard = () => {
 
       {!loading && data ? (
         <div className="grid gap-5">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <InsightsPanel />
+          
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mt-2">
             <StatsCard
               helper={`${data.activeLeads ?? 0} active opportunities`}
               title="Total Leads"
@@ -108,6 +112,11 @@ const Dashboard = () => {
             <StatsCard title="Won Deals" value={data.wonDeals ?? 0} />
             <StatsCard title="Lost Deals" value={data.lostDeals ?? 0} />
           </div>
+
+          <AnalyticsCharts 
+            revenueData={data.revenueOverTime} 
+            pipelineData={data.pipelineByStatus} 
+          />
 
           <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
             <StatusBreakdown items={data.pipelineByStatus || []} />

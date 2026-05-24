@@ -4,6 +4,7 @@ import express from "express";
 import activityRoutes from "../routes/activity.routes.js";
 import authRoutes from "../routes/auth.routes.js";
 import metricsRoutes from "../routes/metrics.routes.js";
+import insightsRoutes from "../routes/insights.routes.js";
 import leadRoutes from "../routes/lead.routes.js";
 import { errorHandler } from "../middlewares/error.middleware.js";
 
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/pipeline", leadRoutes); // Alias for pipeline visualization data
 app.use("/api/metrics", metricsRoutes);
+app.use("/api/insights", insightsRoutes);
 app.use("/api", activityRoutes);
 
 app.use(errorHandler);
