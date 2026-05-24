@@ -29,16 +29,38 @@ const Leads = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filters, setFilters] = useState({
+    status: "",
+    revenueRange: "",
+    sortBy: "createdAt",
+  });
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   useEffect(() => {
     let shouldIgnore = false;
 
     const fetchLeads = async () => {
+      setLoading(true);
       try {
+        const [minDealValue, maxDealValue] = filters.revenueRange ? filters.revenueRange.split("-") : [undefined, undefined];
+
         const response = await API.get("/leads", {
           params: {
             limit: 100,
+            search: debouncedSearch || undefined,
+            status: filters.status || undefined,
+            minDealValue: minDealValue || undefined,
+            maxDealValue: maxDealValue || undefined,
+            sortBy: filters.sortBy,
+            sortOrder: "desc"
           },
         });
 
@@ -64,7 +86,7 @@ const Leads = () => {
     return () => {
       shouldIgnore = true;
     };
-  }, []);
+  }, [debouncedSearch, filters]);
 
   useEffect(() => {
     if (!socket) return;
@@ -104,24 +126,14 @@ const Leads = () => {
     };
   }, [socket]);
 
-  const filteredLeads = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    if (!normalizedSearch) return leads;
-
-    return leads.filter((lead) => {
-      return [lead.name, lead.company, lead.contactInfo]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalizedSearch));
-    });
-  }, [leads, search]);
-
   const leadsByStatus = useMemo(() => {
-    return statusLabels.map((status) => ({
+    const columnsToRender = filters.status ? [filters.status] : statusLabels;
+
+    return columnsToRender.map((status) => ({
       status,
-      leads: filteredLeads.filter((lead) => lead.status === status),
+      leads: leads.filter((lead) => lead.status === status),
     }));
-  }, [filteredLeads]);
+  }, [leads, filters.status]);
 
   const updateLeadInState = (updatedLead) => {
     setLeads((currentLeads) =>
@@ -204,16 +216,42 @@ const Leads = () => {
           <h1 className="mt-2 text-3xl font-black">Lead Pipeline</h1>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:flex-nowrap">
           <input
-            className="h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-white outline-none focus:border-emerald-300 md:w-80"
+            className="h-11 w-full rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-emerald-300 md:w-64"
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search leads or companies"
+            placeholder="Search leads or companies..."
             type="search"
             value={search}
           />
+          <select
+            className="h-11 rounded-lg border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-emerald-300"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          >
+            <option value="">All Stages</option>
+            {statusLabels.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select
+            className="h-11 rounded-lg border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-emerald-300"
+            value={filters.revenueRange}
+            onChange={(e) => setFilters({ ...filters, revenueRange: e.target.value })}
+          >
+            <option value="">All Revenue</option>
+            <option value="0-10000">Under $10k</option>
+            <option value="10000-50000">$10k - $50k</option>
+            <option value="50000-">Over $50k</option>
+          </select>
+          <select
+            className="h-11 rounded-lg border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-emerald-300"
+            value={filters.sortBy}
+            onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+          >
+            <option value="createdAt">Latest</option>
+            <option value="dealValue">Highest Value</option>
+          </select>
           <button
-            className="h-11 rounded-lg bg-emerald-300 px-4 font-bold text-zinc-950"
+            className="h-11 whitespace-nowrap rounded-lg bg-emerald-300 px-4 text-sm font-bold text-zinc-950 transition hover:bg-emerald-400"
             onClick={() => setShowCreateModal(true)}
             type="button"
           >

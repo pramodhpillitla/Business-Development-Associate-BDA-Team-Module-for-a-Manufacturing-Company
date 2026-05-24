@@ -136,6 +136,8 @@ export const getLeads = asyncHandler(async (req, res) => {
     search,
     startDate,
     status,
+    sortBy = "createdAt",
+    sortOrder = "desc",
   } = req.query;
 
   const filter = {};
@@ -190,10 +192,13 @@ export const getLeads = asyncHandler(async (req, res) => {
   const limitNumber = Math.min(Math.max(Number(limit), 1), 100);
   const skip = (pageNumber - 1) * limitNumber;
 
+  const sort = {};
+  sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
   const [leads, total] = await Promise.all([
     populateLead(
       Lead.find(filter)
-        .sort({ createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limitNumber)
     ),
