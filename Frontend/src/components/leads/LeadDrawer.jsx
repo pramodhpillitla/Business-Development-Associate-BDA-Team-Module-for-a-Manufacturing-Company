@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import API from "../../services/api";
+import { useAuth } from "../../context/useAuth";
 
 const activityTypes = ["note", "call", "email", "meeting"];
 
@@ -10,6 +11,7 @@ const formatDate = (value) => {
 };
 
 const LeadDrawer = ({ lead, onClose }) => {
+  const { user } = useAuth();
   const [activities, setActivities] = useState([]);
   const [activityForm, setActivityForm] = useState({
     message: "",
@@ -43,6 +45,8 @@ const LeadDrawer = ({ lead, onClose }) => {
   }, [lead]);
 
   if (!lead) return null;
+
+  const isEditable = user?.role === "admin" || lead.assignedTo?._id === user?._id;
 
   const handleActivityChange = (event) => {
     const { name, value } = event.target;
@@ -119,16 +123,20 @@ const LeadDrawer = ({ lead, onClose }) => {
         </section>
 
         <form
-          className="rounded-lg border border-white/10 bg-white/5 p-4"
+          className={`rounded-lg border border-white/10 bg-white/5 p-4 ${!isEditable ? "opacity-50" : ""}`}
           onSubmit={handleAddActivity}
         >
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="font-bold">Add Activity</h3>
+            <h3 className="font-bold flex items-center gap-2">
+              Add Activity
+              {!isEditable && <span title="Assigned to another representative" className="text-[10px]">🔒</span>}
+            </h3>
             <select
-              className="h-9 rounded-lg border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none"
+              className="h-9 rounded-lg border border-white/10 bg-zinc-950 px-3 text-sm text-white outline-none disabled:cursor-not-allowed"
               name="type"
               onChange={handleActivityChange}
               value={activityForm.type}
+              disabled={!isEditable}
             >
               {activityTypes.map((type) => (
                 <option key={type} value={type}>
@@ -139,16 +147,17 @@ const LeadDrawer = ({ lead, onClose }) => {
           </div>
 
           <textarea
-            className="min-h-24 w-full resize-none rounded-lg border border-white/10 bg-zinc-950 p-3 text-sm text-white outline-none focus:border-emerald-300"
+            className="min-h-24 w-full resize-none rounded-lg border border-white/10 bg-zinc-950 p-3 text-sm text-white outline-none focus:border-emerald-300 disabled:cursor-not-allowed"
             name="message"
             onChange={handleActivityChange}
-            placeholder="Log call summary, email update, meeting note..."
+            placeholder={isEditable ? "Log call summary, email update, meeting note..." : "You cannot add activities to a lead assigned to another representative."}
             value={activityForm.message}
+            disabled={!isEditable}
           />
 
           <button
             className="mt-3 h-10 rounded-lg bg-emerald-300 px-4 text-sm font-bold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={submitting}
+            disabled={submitting || !isEditable}
             type="submit"
           >
             {submitting ? "Saving..." : "Save activity"}

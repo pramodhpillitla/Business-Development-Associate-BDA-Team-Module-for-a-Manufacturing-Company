@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 
 import EmptyState from "../components/common/EmptyState";
 import Loader from "../components/common/Loader";
@@ -25,7 +26,6 @@ const Leads = () => {
   const socket = useSocket();
   const [leads, setLeads] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [dragTarget, setDragTarget] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -135,35 +135,46 @@ const Leads = () => {
     );
   };
 
-  const handleDragStart = (event, lead) => {
-    event.dataTransfer.setData("leadId", lead._id);
-    event.dataTransfer.effectAllowed = "move";
-  };
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 10,
+    },
+  });
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  });
+  const sensors = useSensors(mouseSensor, touchSensor);
 
-  const handleDragOver = (event, status) => {
-    event.preventDefault();
-    setDragTarget(status);
-  };
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const leadId = active.id;
+    const newStatus = over.id;
+    const lead = active.data.current?.lead;
 
-  const handleDrop = async (event, status) => {
-    event.preventDefault();
-    setDragTarget("");
+    if (!lead || lead.status === newStatus) return;
 
-    const leadId = event.dataTransfer.getData("leadId");
-    const lead = leads.find((currentLead) => currentLead._id === leadId);
-
-    if (!lead || lead.status === status) return;
+    const isEditable = user?.role === "admin" || lead.assignedTo?._id === user?._id;
+    if (!isEditable) {
+      setError("You do not have permission to move this lead.");
+      return;
+    }
 
     const previousLeads = leads;
 
     setLeads((currentLeads) =>
       currentLeads.map((currentLead) =>
-        currentLead._id === leadId ? { ...currentLead, status } : currentLead
+        currentLead._id === leadId ? { ...currentLead, status: newStatus } : currentLead
       )
     );
 
     try {
-      const response = await API.patch(`/leads/${leadId}/status`, { status });
+      const response = await API.patch(`/leads/${leadId}/status`, { status: newStatus });
       updateLeadInState(response.data.data);
     } catch (statusError) {
       setLeads(previousLeads);
@@ -220,20 +231,18 @@ const Leads = () => {
       ) : null}
 
       {!loading ? (
-        <div className="grid gap-4 overflow-x-auto pb-4 xl:grid-cols-7">
-          {leadsByStatus.map((column) => (
-            <KanbanColumn
-              isDragTarget={dragTarget === column.status}
-              key={column.status}
-              leads={column.leads}
-              onCardClick={setSelectedLead}
-              onDragOver={(event) => handleDragOver(event, column.status)}
-              onDragStart={handleDragStart}
-              onDrop={handleDrop}
-              status={column.status}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div className="grid gap-4 overflow-x-auto pb-4 xl:grid-cols-7">
+            {leadsByStatus.map((column) => (
+              <KanbanColumn
+                key={column.status}
+                leads={column.leads}
+                onCardClick={setSelectedLead}
+                status={column.status}
+              />
+            ))}
+          </div>
+        </DndContext>
       ) : null}
 
       <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />

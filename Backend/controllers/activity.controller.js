@@ -12,6 +12,15 @@ const ensureValidObjectId = (id, label = "id") => {
   }
 };
 
+const ensureLeadOwnership = (lead, user) => {
+  if (user.role === "admin") return;
+  
+  const assigneeId = lead.assignedTo?._id ? lead.assignedTo._id.toString() : lead.assignedTo?.toString();
+  if (assigneeId !== user._id.toString()) {
+    throw new ApiError(403, "Forbidden: You can only modify leads assigned to you.");
+  }
+};
+
 const ensureLeadExists = async (leadId) => {
   ensureValidObjectId(leadId, "lead id");
 
@@ -42,7 +51,8 @@ export const createActivity = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid activity type");
   }
 
-  await ensureLeadExists(leadId);
+  const lead = await ensureLeadExists(leadId);
+  ensureLeadOwnership(lead, req.user);
 
   const activity = await Activity.create({
     leadId,
@@ -95,6 +105,9 @@ export const updateActivity = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Activity not found");
   }
 
+  const lead = await ensureLeadExists(activity.leadId);
+  ensureLeadOwnership(lead, req.user);
+
   if (message !== undefined) {
     if (!message.trim()) {
       throw new ApiError(400, "Activity message cannot be empty");
@@ -125,11 +138,16 @@ export const deleteActivity = asyncHandler(async (req, res) => {
 
   ensureValidObjectId(activityId, "activity id");
 
-  const activity = await Activity.findByIdAndDelete(activityId);
+  const activity = await Activity.findById(activityId);
 
   if (!activity) {
     throw new ApiError(404, "Activity not found");
   }
+
+  const lead = await ensureLeadExists(activity.leadId);
+  ensureLeadOwnership(lead, req.user);
+
+  await activity.deleteOne();
 
   return res
     .status(200)

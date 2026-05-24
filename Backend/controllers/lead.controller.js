@@ -6,7 +6,7 @@ import { User } from "../models/User.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { getIO } from "../lib/socket.js";
+import { getIO } from "../src/lib/socket.js";
 
 const CLOSED_STATUSES = ["Won", "Lost"];
 const LEAD_UPDATE_FIELDS = [
@@ -22,6 +22,15 @@ const LEAD_UPDATE_FIELDS = [
 const ensureValidObjectId = (id, label = "id") => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, `Invalid ${label}`);
+  }
+};
+
+const ensureLeadOwnership = (lead, user) => {
+  if (user.role === "admin") return;
+  
+  const assigneeId = lead.assignedTo?._id ? lead.assignedTo._id.toString() : lead.assignedTo?.toString();
+  if (assigneeId !== user._id.toString()) {
+    throw new ApiError(403, "Forbidden: You can only modify leads assigned to you.");
   }
 };
 
@@ -223,6 +232,8 @@ export const updateLead = asyncHandler(async (req, res) => {
   const lead = await Lead.findById(id);
   if (!lead) throw new ApiError(404, "Lead not found");
 
+  ensureLeadOwnership(lead, req.user);
+
   for (const field of LEAD_UPDATE_FIELDS) {
     if (req.body[field] !== undefined) {
       lead[field] = req.body[field];
@@ -254,8 +265,12 @@ export const deleteLead = asyncHandler(async (req, res) => {
 
   ensureValidObjectId(id, "lead id");
 
-  const lead = await Lead.findByIdAndDelete(id);
+  const lead = await Lead.findById(id);
   if (!lead) throw new ApiError(404, "Lead not found");
+
+  ensureLeadOwnership(lead, req.user);
+
+  await lead.deleteOne();
 
   await Activity.deleteMany({ leadId: id });
 
@@ -278,6 +293,8 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
 
   const lead = await Lead.findById(id);
   if (!lead) throw new ApiError(404, "Lead not found");
+
+  ensureLeadOwnership(lead, req.user);
 
   lead.status = status;
   applyClosedAtRule(lead);
