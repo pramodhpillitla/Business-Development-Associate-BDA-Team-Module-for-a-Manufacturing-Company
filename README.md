@@ -118,5 +118,5 @@ Strictly adhered to RESTful conventions for resource management:
 
 ## 🤝 Contact
 
-Developed by **[Your Name/Pramodh Pillitla]**.  
+Developed by **Pramodh Pillitla**.  
 Feel free to reach out for a deeper technical walkthrough of the codebase!
